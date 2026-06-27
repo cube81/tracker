@@ -12,7 +12,10 @@
       "Bash(php -r ' *)",
       "Bash(curl -c /tmp/cookies.txt -b /tmp/cookies.txt -X POST http://localhost:8000/login -d 'email=admin@tracker.local&password=admin123' -L -s)",
       "Bash(pkill -f \"php -S localhost:8000\")",
-      "Bash(php check_admin.php)"
+      "Bash(php check_admin.php)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
