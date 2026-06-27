@@ -272,6 +272,45 @@ class ReportController {
             }
         }
         $html .= '</table>';
+
+        // --- Page 3: detailed activity list ---
+        $sortedActivities = $activities;
+        usort($sortedActivities, fn($a, $b) => strcmp($a->date . $a->time_from, $b->date . $b->time_from));
+
+        $html .= '<pagebreak />';
+        $html .= '<p style="font-size:15px;font-weight:bold;border-bottom:1px solid #ddd;padding-bottom:5px;margin-bottom:12px;">Activity log</p>';
+        $html .= '<table width="100%" cellpadding="5" cellspacing="0" style="border-collapse:collapse;font-size:10px;">';
+        $html .= '<tr style="background:#f5f5f5;">';
+        $html .= '<th align="left"  style="border-bottom:2px solid #ddd;padding:6px 5px;">Data</th>';
+        $html .= '<th align="left"  style="border-bottom:2px solid #ddd;padding:6px 5px;">Opis</th>';
+        $html .= '<th align="left"  style="border-bottom:2px solid #ddd;padding:6px 5px;">Projekt</th>';
+        $html .= '<th align="center" width="80" style="border-bottom:2px solid #ddd;padding:6px 5px;">Godziny</th>';
+        $html .= '<th align="right"  width="60" style="border-bottom:2px solid #ddd;padding:6px 5px;">Czas</th>';
+        $html .= '</tr>';
+
+        $prevDate = '';
+        foreach ($sortedActivities as $activity) {
+            $project = Project::find($activity->project_id);
+            $color   = htmlspecialchars($project->color ?? '#1e90ff');
+            $dateStr = date('d.m.Y', strtotime($activity->date));
+            $bg      = ($activity->date !== $prevDate && $prevDate !== '') ? 'background:#fafafa;' : '';
+            $prevDate = $activity->date;
+
+            $html .= '<tr style="' . $bg . 'border-bottom:1px solid #f0f0f0;">';
+            $html .= '<td style="padding:5px;white-space:nowrap;">' . $dateStr . '</td>';
+            $html .= '<td style="padding:5px;">' . htmlspecialchars($activity->description) . '</td>';
+            $html .= '<td style="padding:5px;white-space:nowrap;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' . $color . ';margin-right:4px;vertical-align:middle;"></span>' . htmlspecialchars($project->name) . '</td>';
+            $html .= '<td align="center" style="padding:5px;white-space:nowrap;">' . substr($activity->time_from, 0, 5) . '–' . substr($activity->time_to, 0, 5) . '</td>';
+            $html .= '<td align="right"  style="padding:5px;font-weight:bold;">' . minutes_to_time($activity->duration_minutes) . '</td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '<tr style="background:#f5f5f5;">';
+        $html .= '<td colspan="4" style="padding:7px 5px;font-weight:bold;border-top:2px solid #ddd;">Razem</td>';
+        $html .= '<td align="right" style="padding:7px 5px;font-weight:bold;border-top:2px solid #ddd;">' . $totalFormatted . '</td>';
+        $html .= '</tr>';
+        $html .= '</table>';
+
         $html .= '</body></html>';
         return $html;
     }
@@ -295,7 +334,7 @@ class ReportController {
         $cH = $H - $pB - $pT;
         $barW = max(2, floor($cW / $numDays) - 1);
 
-        $svg = '<svg width="' . $W . '" height="' . $H . '" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px;">';
+        $svg = '<svg viewBox="0 0 ' . $W . ' ' . $H . '" width="100%" height="' . $H . '" xmlns="http://www.w3.org/2000/svg" style="display:block;margin-bottom:8px;">';
 
         // Gridlines & Y labels
         $steps = 5;
@@ -334,30 +373,36 @@ class ReportController {
 
         $cx = 60; $cy = 60; $R = 52; $ri = 36;
 
-        $svg  = '<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">';
-        $svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $R . '" fill="#eeeeee"/>';
-        $svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $ri . '" fill="white"/>';
+        $svg = '<svg width="120" height="120" xmlns="http://www.w3.org/2000/svg">';
 
-        $startAngle = -M_PI / 2; // start at 12 o'clock
+        if (count($items) === 1) {
+            // Single item: full circle in project color
+            $svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $R  . '" fill="' . htmlspecialchars($items[0]['color']) . '"/>';
+            $svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $ri . '" fill="white"/>';
+        } else {
+            $svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $R  . '" fill="#eeeeee"/>';
+            $svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $ri . '" fill="white"/>';
 
-        foreach ($items as $item) {
-            $portion  = $item['minutes'] / $totalMinutes;
-            $endAngle = $startAngle + $portion * 2 * M_PI;
-            $large    = ($endAngle - $startAngle > M_PI) ? 1 : 0;
+            $startAngle = -M_PI / 2;
+            foreach ($items as $item) {
+                $portion  = $item['minutes'] / $totalMinutes;
+                $endAngle = $startAngle + $portion * 2 * M_PI;
+                $large    = ($endAngle - $startAngle > M_PI) ? 1 : 0;
 
-            $ox1 = round($cx + $R  * cos($startAngle), 3);
-            $oy1 = round($cy + $R  * sin($startAngle), 3);
-            $ox2 = round($cx + $R  * cos($endAngle),   3);
-            $oy2 = round($cy + $R  * sin($endAngle),   3);
-            $ix1 = round($cx + $ri * cos($startAngle), 3);
-            $iy1 = round($cy + $ri * sin($startAngle), 3);
-            $ix2 = round($cx + $ri * cos($endAngle),   3);
-            $iy2 = round($cy + $ri * sin($endAngle),   3);
+                $ox1 = round($cx + $R  * cos($startAngle), 3);
+                $oy1 = round($cy + $R  * sin($startAngle), 3);
+                $ox2 = round($cx + $R  * cos($endAngle),   3);
+                $oy2 = round($cy + $R  * sin($endAngle),   3);
+                $ix1 = round($cx + $ri * cos($startAngle), 3);
+                $iy1 = round($cy + $ri * sin($startAngle), 3);
+                $ix2 = round($cx + $ri * cos($endAngle),   3);
+                $iy2 = round($cy + $ri * sin($endAngle),   3);
 
-            $d = "M $ox1 $oy1 A $R $R 0 $large 1 $ox2 $oy2 L $ix2 $iy2 A $ri $ri 0 $large 0 $ix1 $iy1 Z";
-            $svg .= '<path d="' . $d . '" fill="' . htmlspecialchars($item['color']) . '"/>';
+                $d = "M $ox1 $oy1 A $R $R 0 $large 1 $ox2 $oy2 L $ix2 $iy2 A $ri $ri 0 $large 0 $ix1 $iy1 Z";
+                $svg .= '<path d="' . $d . '" fill="' . htmlspecialchars($item['color']) . '"/>';
 
-            $startAngle = $endAngle;
+                $startAngle = $endAngle;
+            }
         }
 
         $svg .= '<text x="' . $cx . '" y="' . ($cy + 4) . '" text-anchor="middle" font-size="10" font-weight="bold" fill="#333">' . htmlspecialchars($centerText) . '</text>';

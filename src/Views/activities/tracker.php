@@ -241,15 +241,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Load more activities by month
-let monthsBack = 1;  // Start from 2 (April) since we already show 0 (June) and 1 (May)
+let loadBeforeDate = '<?= $prevMonthStart ?>';
 function loadMoreActivities() {
     const btn = document.getElementById('loadMoreBtn');
     btn.disabled = true;
     btn.textContent = 'Ładowanie...';
 
-    monthsBack++;  // 2 → April, 3 → March, etc.
-
-    fetch('/api/more-activities?months_back=' + monthsBack)
+    fetch('/api/more-activities?before=' + encodeURIComponent(loadBeforeDate))
         .then(r => r.json())
         .then(data => {
             if (!data.activities || data.activities.length === 0) {
@@ -305,11 +303,16 @@ function loadMoreActivities() {
             monthDiv.appendChild(activitiesDiv);
             list.appendChild(monthDiv);
 
-            btn.disabled = false;
-            btn.textContent = 'Załaduj poprzedni miesiąc';
+            if (data.nextBefore) {
+                loadBeforeDate = data.nextBefore;
+                btn.disabled = false;
+                btn.textContent = 'Załaduj poprzedni miesiąc';
+            } else {
+                btn.textContent = 'Koniec historii';
+                btn.disabled = true;
+            }
         })
         .catch(err => {
-            monthsBack--;
             btn.disabled = false;
             btn.textContent = 'Załaduj poprzedni miesiąc';
             alert('Błąd: ' + err.message);

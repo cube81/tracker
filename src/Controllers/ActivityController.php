@@ -147,11 +147,22 @@ class ActivityController {
         Auth::guard();
 
         $user = Auth::user();
-        $monthsBack = (int)($_GET['months_back'] ?? 2);
+        $before = $_GET['before'] ?? date('Y-m-01');
 
-        // Get activities for the month (months_back)
-        $firstDayOfMonth = date('Y-m-01', strtotime('-' . $monthsBack . ' months'));
-        $lastDayOfMonth = date('Y-m-t', strtotime('-' . $monthsBack . ' months'));
+        // Find the most recent date with activities before the given date
+        $latest = Database::one(
+            'SELECT MAX(date) as last_date FROM activities WHERE user_id = ? AND date < ?',
+            [$user->id, $before]
+        );
+
+        if (!$latest || !$latest['last_date']) {
+            header('Content-Type: application/json');
+            echo json_encode(['activities' => [], 'month' => '', 'monthShort' => '', 'nextBefore' => null]);
+            return;
+        }
+
+        $monthStart = date('Y-m-01', strtotime($latest['last_date']));
+        $monthEnd   = date('Y-m-t',  strtotime($latest['last_date']));
 
         $sql = 'SELECT a.*, p.name as project_name, p.color
                 FROM activities a
@@ -159,13 +170,14 @@ class ActivityController {
                 WHERE a.user_id = ? AND a.date BETWEEN ? AND ?
                 ORDER BY a.date DESC, a.time_from DESC';
 
-        $rows = Database::all($sql, [$user->id, $firstDayOfMonth, $lastDayOfMonth]);
+        $rows = Database::all($sql, [$user->id, $monthStart, $monthEnd]);
 
         header('Content-Type: application/json');
         echo json_encode([
-            'month' => date('F Y', strtotime($firstDayOfMonth)),
-            'monthShort' => date('m/Y', strtotime($firstDayOfMonth)),
-            'activities' => $rows
+            'month'       => date('F Y', strtotime($latest['last_date'])),
+            'monthShort'  => date('m/Y', strtotime($latest['last_date'])),
+            'activities'  => $rows,
+            'nextBefore'  => $monthStart
         ]);
     }
 
