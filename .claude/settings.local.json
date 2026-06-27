@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer install *)",
+      "Bash(php -S localhost:8000 -t public/)",
+      "Bash(chmod +x setup.sh)",
+      "Bash(bash setup.sh)",
+      "Bash(mysql -h serwer2452403.home.pl:3380 -u 38860350_projekty -p'qUYCAw35qvSCz4fTb' 38860350_projekty)",
+      "Bash(mysql -h serwer2452403.home.pl -P 3380 -u 38860350_projekty -p'qUYCAw35qvSCz4fTb' 38860350_projekty)",
+      "Bash(php setup.php)",
+      "Bash(curl -s http://localhost:8000/login)",
+      "Bash(php -r ' *)",
+      "Bash(curl -c /tmp/cookies.txt -b /tmp/cookies.txt -X POST http://localhost:8000/login -d 'email=admin@tracker.local&password=admin123' -L -s)",
+      "Bash(pkill -f \"php -S localhost:8000\")",
+      "Bash(php check_admin.php)"
+    ]
+  }
+}
