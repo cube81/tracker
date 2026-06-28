@@ -15,7 +15,8 @@
       "Bash(php check_admin.php)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(curl -s -c /tmp/test_cookie.txt -b /tmp/test_cookie.txt http://projekty.pgms.pl/login)"
     ]
   }
 }

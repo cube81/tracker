@@ -97,7 +97,7 @@
                         <td style="text-align: right;"><?= $percentage ?>%</td>
                         <td style="text-align: right; font-size: 12px; color: var(--text-light);">
                             <?php if ($unbilledMinutes > 0): ?>
-                                <strong style="color: var(--warning); font-size: 13px;">
+                                <strong style="color: <?= $color ?>; font-size: 13px;">
                                     <?php if ($hourlyRate > 0): ?>
                                         <?= number_format($unbilledAmount, 2, ',', ' ') ?> zł
                                         <br><small>(<?= number_format($unbilledHours, 2, ',', '.') ?>h × <?= number_format($hourlyRate, 2, ',', '.') ?> zł)</small>
